@@ -4,6 +4,42 @@ All notable changes to Klaudio Panels are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
 semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
 
+## [1.7.1] — 2026-05-18
+
+### Added
+- **Clickable bare-domain URLs in the terminal**
+  ([#45](https://github.com/willywg/klaudio-panels/issues/45)). Scheme-less
+  URLs that Claude commonly emits — `app.constructai.la`,
+  `linear.app/foo/bar`, `github.com/user/repo` — now hover-underline and
+  ⌘+click opens them in the system browser as `https://<host>/<path>`.
+  Wired into all three terminal surfaces (Claude PTY, shell PTY, editor
+  PTYs). A small TLD allowlist (com|org|net|io|dev|app|ai|co|la +
+  common country codes) keeps file extensions like `.ts` / `.json` /
+  `.html` out of the URL path — extending the list is cheap when a
+  case shows up. Side effect: a long-standing false positive is gone
+  — the file-link provider's greedy regex used to match
+  `app.constructai.la` as the "file" `app.constructai` with `.la`
+  "extension", which silently sent ⌘+click to the diff panel for a
+  non-existent path.
+
+### Fixed
+- **`openUrl` failures now land in `klaudio.log`**
+  ([#45](https://github.com/willywg/klaudio-panels/issues/45)).
+  `src/lib/open-url.ts` used `console.warn` on rejection, which
+  `installGlobalErrorForwarding` doesn't capture (it only forwards
+  `window.error` + `window.unhandledrejection`). Any future opener
+  regression — Tauri ACL change, NSWorkspace returning no-error for
+  an unknown handler, scope misconfiguration — is now visible in
+  `~/Library/Logs/Klaudio Panels/klaudio.log` as a
+  `[JS:open-url] failed …` line, alongside the matching
+  `[JS:open-url] attempt …` so we can tell whether the click reached
+  the handler at all.
+
+### Tracked work
+- PRP: [`PRPs/020--bare-url-links-and-open-url-diagnostics.md`](PRPs/020--bare-url-links-and-open-url-diagnostics.md)
+- PR: [#46](https://github.com/willywg/klaudio-panels/pull/46)
+- Issue: [#45](https://github.com/willywg/klaudio-panels/issues/45)
+
 ## [1.7.0] — 2026-05-15
 
 ### Added
