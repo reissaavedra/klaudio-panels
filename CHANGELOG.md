@@ -4,10 +4,11 @@ All notable changes to Klaudio Panels are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
 semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
 
-## [Unreleased]
+## [1.8.0] — 2026-06-01
 
 ### Added
-- **Two-letter project avatar initials, with per-project override.** Avatars
+- **Two-letter project avatar initials, with per-project override**
+  ([#47](https://github.com/willywg/klaudio-panels/pull/47)). Avatars
   in the projects sidebar now show two characters by default — multi-word
   names like `platform-two` or `myCoolApp` use the first letter of each
   word (`PT`, `MC`); single-word names take the first two letters
@@ -16,7 +17,8 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
   Enter to save, Esc to cancel, **Reset** to fall back to the auto value).
   The override is persisted in `localStorage` alongside the rest of
   `recentProjects` and survives reload. Existing entries without an
-  override migrate transparently.
+  override migrate transparently. Contributed by
+  [@adancondori](https://github.com/adancondori).
 
 ### Changed
 - Avatar font size auto-shrinks from `13px` to `11px` when the initials
@@ -25,6 +27,13 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
   (Rename initials… / Close project) instead of suppressing the native
   one outright. Close still requires confirmation, preserving the
   destructive-by-accident guard from the previous behavior.
+
+### Tracked work
+- PR: [#47](https://github.com/willywg/klaudio-panels/pull/47)
+  (no prior issue — drive-by contribution)
+- Follow-ups: [#48](https://github.com/willywg/klaudio-panels/issues/48)
+  (emoji in avatar labels), [#49](https://github.com/willywg/klaudio-panels/issues/49)
+  (custom image/logo avatar, OpenCode-style)
 
 ## [1.7.1] — 2026-05-18
 
