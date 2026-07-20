@@ -30,8 +30,13 @@ Klaudio Panels ships as a **universal .dmg** — one binary that runs natively o
 
 ```bash
 brew tap willywg/klaudio-panels
+brew trust willywg/klaudio-panels   # newer Homebrew requires this once for third-party taps
 brew install --cask klaudio-panels
 ```
+
+If a later `brew install`/`brew upgrade` stops with *"from untrusted tap
+willywg/klaudio-panels"*, run the `brew trust` line above once and retry —
+older Homebrew versions don't have (or need) the command.
 
 **Or download directly:** grab `Klaudio Panels_<version>_universal.dmg` from the [latest release](https://github.com/willywg/klaudio-panels/releases/latest) and drag the app into `/Applications`.
 
