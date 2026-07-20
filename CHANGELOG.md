@@ -4,7 +4,7 @@ All notable changes to Klaudio Panels are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
 semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
 
-## [Unreleased]
+## [1.9.0] — 2026-07-20
 
 ### Added
 - **Rendered markdown mode in the file preview**
@@ -74,6 +74,20 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
   `dialog:allow-confirm` and awaiting the async `confirm()` so the guard
   genuinely gates the close. Pre-existing since 2026-04-24; unrelated to the
   v1.8.0 avatar work.
+
+### Tracked work
+- PRs: [#51](https://github.com/willywg/klaudio-panels/pull/51),
+  [#53](https://github.com/willywg/klaudio-panels/pull/53),
+  [#55](https://github.com/willywg/klaudio-panels/pull/55),
+  [#57](https://github.com/willywg/klaudio-panels/pull/57),
+  [#59](https://github.com/willywg/klaudio-panels/pull/59),
+  [#61](https://github.com/willywg/klaudio-panels/pull/61)
+- Issues: [#50](https://github.com/willywg/klaudio-panels/issues/50),
+  [#52](https://github.com/willywg/klaudio-panels/issues/52),
+  [#54](https://github.com/willywg/klaudio-panels/issues/54),
+  [#56](https://github.com/willywg/klaudio-panels/issues/56),
+  [#58](https://github.com/willywg/klaudio-panels/issues/58),
+  [#60](https://github.com/willywg/klaudio-panels/issues/60)
 
 ## [1.8.0] — 2026-06-01
 
