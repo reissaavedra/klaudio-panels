@@ -6,6 +6,8 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
 
 ## [Unreleased]
 
+## [1.10.2] — 2026-08-26
+
 ### Fixed
 - **Clipboard history no longer stops recording when a second Klaudio starts**
   ([#96](https://github.com/willywg/klaudio-panels/issues/96)). A day of clips
@@ -106,6 +108,10 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
   The extension must now also **start with a letter**. `tok: 1193.8M`,
   `(195.9KB)` and `v1.10.1` were all being matched as filenames — the second
   one sitting directly beside a real image path.
+
+### Tracked work
+- PRs: [#92](https://github.com/willywg/klaudio-panels/pull/92), [#94](https://github.com/willywg/klaudio-panels/pull/94), [#97](https://github.com/willywg/klaudio-panels/pull/97)
+- Issues: [#91](https://github.com/willywg/klaudio-panels/issues/91), [#93](https://github.com/willywg/klaudio-panels/issues/93), [#95](https://github.com/willywg/klaudio-panels/issues/95), [#96](https://github.com/willywg/klaudio-panels/issues/96)
 
 ## [1.10.1] — 2026-08-20
 
