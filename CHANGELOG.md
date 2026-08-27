@@ -6,6 +6,8 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-08-26
+
 ### Added
 - **Reopening a project brings back the whole workspace, not one tab**
   ([#98](https://github.com/willywg/klaudio-panels/issues/98)). Four sessions
@@ -35,6 +37,10 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
   Waking is one effect watching the active tab rather than a call at each of
   the five places a tab can be activated, which leaves a single invariant to
   hold: the active Claude tab always has a PTY.
+
+### Tracked work
+- PR: [#99](https://github.com/willywg/klaudio-panels/pull/99)
+- Issue: [#98](https://github.com/willywg/klaudio-panels/issues/98)
 
 ## [1.10.2] — 2026-08-26
 
