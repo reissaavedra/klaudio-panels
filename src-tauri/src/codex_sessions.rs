@@ -88,6 +88,10 @@ struct RolloutFirstLine {
 #[derive(Debug, Deserialize)]
 struct SessionMetaPayload {
     session_id: Option<String>,
+    // Older Codex rollouts (observed through 0.140.0-alpha.2) predate
+    // `session_id`. For those files `id` is the only resumable identifier;
+    // modern resumed rollouts still prefer the stable `session_id` above.
+    id: Option<String>,
     cwd: Option<String>,
 }
 
@@ -116,7 +120,8 @@ fn read_session_meta_line(path: &Path) -> Option<(String, String, Option<String>
         return None;
     }
     let payload = parsed.payload?;
-    Some((payload.session_id?, payload.cwd?, parsed.timestamp))
+    let session_id = payload.session_id.or(payload.id)?;
+    Some((session_id, payload.cwd?, parsed.timestamp))
 }
 
 fn mtime_to_rfc3339(path: &Path) -> Option<String> {
@@ -320,6 +325,13 @@ mod tests {
         )
     }
 
+    fn legacy_session_meta_line(id: &str, cwd: &Path, timestamp: &str) -> String {
+        format!(
+            r#"{{"timestamp":"{timestamp}","type":"session_meta","payload":{{"id":"{id}","timestamp":"{timestamp}","cwd":"{}","originator":"codex-tui"}}}}"#,
+            cwd.display()
+        )
+    }
+
     fn user_message_line(text: &str) -> String {
         format!(
             r#"{{"timestamp":"2026-01-01T00:00:01.000Z","type":"response_item","payload":{{"type":"message","id":"msg_1","role":"user","content":[{{"type":"input_text","text":{}}}]}}}}"#,
@@ -355,6 +367,24 @@ mod tests {
             Some("what does this project do?")
         );
         assert_eq!(s.created_at.as_deref(), Some("2026-09-16T20:58:58.877Z"));
+    }
+
+    #[test]
+    fn legacy_rollout_without_session_id_falls_back_to_payload_id() {
+        let root = TempDir::new("legacy-id");
+        let project = TempDir::new("legacy-id-project");
+        let path = write_rollout(
+            &root.0,
+            "2026/06/01",
+            "rollout-legacy-id-a.jsonl",
+            &[
+                legacy_session_meta_line("legacy-id-a", &project.0, "2026-06-01T12:00:00.000Z"),
+                user_message_line("old but resumable"),
+            ],
+        );
+
+        let session = session_from_rollout_file(&path).unwrap();
+        assert_eq!(session.id, "legacy-id-a");
     }
 
     // The exact bug Gate 3 exists to catch: a preview extractor that takes

@@ -377,11 +377,12 @@ fn blocked_env(id: AgentId) -> &'static [&'static str] {
         // Cursor): ran `codex exec --sandbox read-only` asking it to execute
         // `env | cut -d= -f1 | sort` (names only, so no value reached a
         // transcript) and diffed that against the parent's names. Codex's
-        // child added eight: `CODEX_CI`, `CODEX_SANDBOX_NETWORK_DISABLED`
-        // and `CODEX_THREAD_ID` are this *launching* session's own
-        // bookkeeping — exactly the #104 shape, where a fresh `codex` that
-        // inherits them would read the wrong thread id, CI mode, or sandbox
-        // decision as its own.
+        // child added eight in 0.146.0; 0.160.0 additionally exposes
+        // `CODEX_SESSION_ID` and `CODEX_PERMISSION_PROFILE` in the live
+        // session environment. These names are this *launching* session's
+        // identity and execution policy — exactly the #104 shape, where a
+        // fresh `codex` must not adopt the outer session id, CI mode, or
+        // sandbox/permission decision as its own.
         //
         // Left alone on purpose, same reasoning PRP 024 used for Cursor's
         // `CURSOR_RIPGREP_PATH` and `NO_COLOR`: `GH_PAGER` / `GIT_PAGER` /
@@ -391,7 +392,13 @@ fn blocked_env(id: AgentId) -> &'static [&'static str] {
         // convention a user may set on purpose; stripping it to protect no
         // one would uncolour every agent's TUI launched from inside a Codex
         // shell.
-        AgentId::Codex => &["CODEX_CI", "CODEX_SANDBOX_NETWORK_DISABLED", "CODEX_THREAD_ID"],
+        AgentId::Codex => &[
+            "CODEX_CI",
+            "CODEX_PERMISSION_PROFILE",
+            "CODEX_SANDBOX_NETWORK_DISABLED",
+            "CODEX_SESSION_ID",
+            "CODEX_THREAD_ID",
+        ],
     }
 }
 
@@ -619,8 +626,11 @@ mod tests {
     fn strips_the_markers_a_fresh_codex_would_adopt_as_its_own_session() {
         let mut e = env(&[
             ("CODEX_THREAD_ID", "the-launching-thread"),
+            ("CODEX_SESSION_ID", "the-launching-session"),
             ("CODEX_CI", "1"),
+            ("CODEX_PERMISSION_PROFILE", "managed"),
             ("CODEX_SANDBOX_NETWORK_DISABLED", "1"),
+            ("CODEX_VERSION", "0.160.0"),
             ("GH_PAGER", "cat"),
             ("NO_COLOR", "1"),
             ("PATH", "/usr/bin"),
@@ -629,9 +639,15 @@ mod tests {
 
         assert_eq!(
             stripped,
-            vec!["CODEX_CI", "CODEX_SANDBOX_NETWORK_DISABLED", "CODEX_THREAD_ID"]
+            vec![
+                "CODEX_CI",
+                "CODEX_PERMISSION_PROFILE",
+                "CODEX_SANDBOX_NETWORK_DISABLED",
+                "CODEX_SESSION_ID",
+                "CODEX_THREAD_ID",
+            ]
         );
-        assert_eq!(names(&e), vec!["GH_PAGER", "NO_COLOR", "PATH"]);
+        assert_eq!(names(&e), vec!["CODEX_VERSION", "GH_PAGER", "NO_COLOR", "PATH"]);
     }
 
     #[test]

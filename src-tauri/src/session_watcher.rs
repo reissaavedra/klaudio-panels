@@ -46,6 +46,11 @@ static SEEN: LazyLock<Mutex<HashSet<PathBuf>>> = LazyLock::new(|| Mutex::new(Has
 /// conflate their bookkeeping either.
 static CODEX_SEEN: LazyLock<Mutex<HashSet<PathBuf>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
+/// The boot path and the first Codex spawn can race to install this watcher.
+/// Serializing installation keeps exactly one debouncer alive while still
+/// allowing a first-ever Codex launch to create the sessions root lazily.
+static CODEX_WATCHER_INSTALLED: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
+
 /// Last-seen completed assistant uuid per session. Used to dedupe
 /// `session:complete` events — the JSONL gets multiple write ticks per
 /// turn (streaming), so without this we'd fire the notification many
@@ -254,19 +259,30 @@ fn emit_for_codex_rollout(app: &AppHandle, path: &Path) {
     let _ = app.emit("session:meta", meta);
 }
 
-/// Codex's sessions root, watched only if it exists — same reasoning as
-/// Cursor's: creating `~/.codex` for someone who has never installed Codex
-/// would be a strange thing for a Claude user's app to do.
-fn install_codex(app: AppHandle) -> anyhow::Result<()> {
+/// Install Codex's watcher once. At boot we only watch an existing root, so
+/// a Claude-only user's home is untouched. Immediately before a Codex spawn
+/// `create_root` is true: this closes the first-ever-session hole where the
+/// rollout directory did not exist at boot and no watcher ever observed it.
+pub(crate) fn ensure_codex_watcher(app: AppHandle, create_root: bool) -> anyhow::Result<()> {
+    let mut installed = CODEX_WATCHER_INSTALLED
+        .lock()
+        .map_err(|_| anyhow::anyhow!("Codex watcher installation lock is poisoned"))?;
+    if *installed {
+        return Ok(());
+    }
     let Some(root) = agent::watch_root(AgentId::Codex) else {
         return Ok(());
     };
     if !root.is_dir() {
-        crate::debug_log::write(
-            "boot",
-            "no Codex sessions directory; Codex session watcher not installed",
-        );
-        return Ok(());
+        if create_root {
+            std::fs::create_dir_all(&root)?;
+        } else {
+            crate::debug_log::write(
+                "boot",
+                "no Codex sessions directory; Codex watcher will install on first Codex spawn",
+            );
+            return Ok(());
+        }
     }
 
     seed_codex_seen(&root);
@@ -297,6 +313,7 @@ fn install_codex(app: AppHandle) -> anyhow::Result<()> {
         let _hold = debouncer;
         std::thread::park();
     });
+    *installed = true;
     Ok(())
 }
 
@@ -366,7 +383,7 @@ pub fn install(app: AppHandle) -> anyhow::Result<()> {
     if let Err(e) = install_cursor(app.clone()) {
         crate::debug_log::write("boot", &format!("cursor session_watcher install failed: {e}"));
     }
-    if let Err(e) = install_codex(app.clone()) {
+    if let Err(e) = ensure_codex_watcher(app.clone(), false) {
         crate::debug_log::write("boot", &format!("codex session_watcher install failed: {e}"));
     }
     install_claude(app)
