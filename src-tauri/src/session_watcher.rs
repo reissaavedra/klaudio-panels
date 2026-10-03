@@ -41,6 +41,11 @@ pub struct SessionCompletePayload {
 
 static SEEN: LazyLock<Mutex<HashSet<PathBuf>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
+/// First-sighting dedup for Codex's watcher, kept separate from Claude's
+/// `SEEN` — the two roots never share paths, but there is no reason to
+/// conflate their bookkeeping either.
+static CODEX_SEEN: LazyLock<Mutex<HashSet<PathBuf>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+
 /// Last-seen completed assistant uuid per session. Used to dedupe
 /// `session:complete` events — the JSONL gets multiple write ticks per
 /// turn (streaming), so without this we'd fire the notification many
@@ -211,6 +216,103 @@ fn is_cursor_meta(path: &Path) -> bool {
     path.file_name().and_then(|n| n.to_str()) == Some(crate::cursor_sessions::META_FILE)
 }
 
+/// A Codex rollout file changed. Unlike Cursor, Codex does not mint a
+/// session id up front (`agent::mints_session_ids(Codex) == false`), so a
+/// brand-new tab has nothing to correlate against until its rollout file's
+/// first line exists — this fires `session:new` on first sighting, feeding
+/// the same FIFO correlation Claude's tabs use, and `session:meta` on every
+/// later change so an already-open tab's live label/preview stays current.
+fn emit_for_codex_rollout(app: &AppHandle, path: &Path) {
+    if !crate::codex_sessions::is_rollout_file(path) {
+        return;
+    }
+    // Bails and retries on the next debounce tick if the first line isn't a
+    // readable `session_meta` yet — same contract as Claude's `read_cwd`.
+    let Some(meta) = crate::codex_sessions::session_from_rollout(path) else {
+        return;
+    };
+
+    let is_new = {
+        let mut seen = match CODEX_SEEN.lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+        seen.insert(path.to_path_buf())
+    };
+
+    if is_new {
+        let payload = SessionNewPayload {
+            agent: AgentId::Codex.as_str().to_string(),
+            project_path: meta.project_path.clone(),
+            session_id: meta.id.clone(),
+            jsonl_created_at_ms: file_birth_ms(path),
+            preview: meta.first_message_preview.clone(),
+        };
+        let _ = app.emit("session:new", payload);
+    }
+
+    let _ = app.emit("session:meta", meta);
+}
+
+/// Codex's sessions root, watched only if it exists — same reasoning as
+/// Cursor's: creating `~/.codex` for someone who has never installed Codex
+/// would be a strange thing for a Claude user's app to do.
+fn install_codex(app: AppHandle) -> anyhow::Result<()> {
+    let Some(root) = agent::watch_root(AgentId::Codex) else {
+        return Ok(());
+    };
+    if !root.is_dir() {
+        crate::debug_log::write(
+            "boot",
+            "no Codex sessions directory; Codex session watcher not installed",
+        );
+        return Ok(());
+    }
+
+    seed_codex_seen(&root);
+
+    let app_handler = app.clone();
+    let mut debouncer = new_debouncer(
+        Duration::from_millis(DEBOUNCE_MS),
+        None,
+        move |result: DebounceEventResult| match result {
+            Ok(events) => {
+                for ev in events {
+                    if !matches!(ev.event.kind, EventKind::Create(_) | EventKind::Modify(_)) {
+                        continue;
+                    }
+                    for p in &ev.event.paths {
+                        emit_for_codex_rollout(&app_handler, p);
+                    }
+                }
+            }
+            Err(errors) => {
+                eprintln!("codex session_watcher errors: {errors:?}");
+            }
+        },
+    )?;
+    debouncer.watch(&root, RecursiveMode::Recursive)?;
+
+    std::thread::spawn(move || {
+        let _hold = debouncer;
+        std::thread::park();
+    });
+    Ok(())
+}
+
+/// Seeds `CODEX_SEEN` at boot so rollout files that already exist don't fire
+/// a spurious `session:new` on their first post-boot modification — the same
+/// reason Claude's `seed_seen` exists.
+fn seed_codex_seen(root: &Path) {
+    let mut seen = match CODEX_SEEN.lock() {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+    for path in crate::codex_sessions::list_rollout_files(root) {
+        seen.insert(path);
+    }
+}
+
 /// Cursor's chats root, watched only if it exists: creating `~/.cursor` for
 /// someone who has never installed Cursor would be a strange thing for a
 /// Claude user's app to do. Installing Cursor later means the list still
@@ -263,6 +365,9 @@ fn install_cursor(app: AppHandle) -> anyhow::Result<()> {
 pub fn install(app: AppHandle) -> anyhow::Result<()> {
     if let Err(e) = install_cursor(app.clone()) {
         crate::debug_log::write("boot", &format!("cursor session_watcher install failed: {e}"));
+    }
+    if let Err(e) = install_codex(app.clone()) {
+        crate::debug_log::write("boot", &format!("codex session_watcher install failed: {e}"));
     }
     install_claude(app)
 }
