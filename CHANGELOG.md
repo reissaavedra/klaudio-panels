@@ -4,7 +4,7 @@ All notable changes to Klaudio Panels are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
 semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
 
-## [Unreleased]
+## [1.15.0] — 2026-10-13
 
 ### Changed
 - **Hidden terminals share three WebGL contexts instead of one each**
@@ -17,6 +17,11 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
   532 MB, and 24 empty ones from 504 MB to 348 MB. The GPU process stayed
   flat. Agent and shell scrollback stay at 10,000 lines. An editor PTY,
   which draws on the alternate screen, keeps 1,000.
+
+### Tracked work
+- PRP: [`PRPs/026--terminal-memory-per-tab.md`](PRPs/026--terminal-memory-per-tab.md)
+- PR: [#121](https://github.com/willywg/klaudio-panels/pull/121)
+- Issue: [#113](https://github.com/willywg/klaudio-panels/issues/113) (point 4)
 
 ## [1.14.0] — 2026-09-24
 
