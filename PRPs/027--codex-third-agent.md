@@ -1,4 +1,4 @@
-# PRP 026 — Codex as the third registered agent
+# PRP 027 — Codex as the third registered agent
 
 **Issue:** [#122](https://github.com/willywg/klaudio-panels/issues/122).
 **Status:** implemented on `feat/codex-agent-integration`, based directly on

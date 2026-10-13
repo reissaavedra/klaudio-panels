@@ -16,7 +16,28 @@ semantic versioning from v0.2.0 onwards (pre-`v0.2.0` tags are PoC snapshots).
   even when `~/.codex/sessions` did not exist at app startup.
 
 ### Tracked work
-- PRP: [`PRPs/026--codex-third-agent.md`](PRPs/026--codex-third-agent.md)
+- PRP: [`PRPs/027--codex-third-agent.md`](PRPs/027--codex-third-agent.md)
+- PR: [#123](https://github.com/willywg/klaudio-panels/pull/123)
+- Issue: [#122](https://github.com/willywg/klaudio-panels/issues/122)
+
+## [1.15.0] — 2026-10-13
+
+### Changed
+- **Hidden terminals share three WebGL contexts instead of one each**
+  ([#113](https://github.com/willywg/klaudio-panels/issues/113)). A full
+  WebGL terminal cost about 20 MB more than the same terminal on the DOM
+  renderer, and attaching WebGL to a hidden full buffer took 41 ms (median
+  of 10). The cap is 3: the active agent tab, the active shell tab, and one
+  recent tab. In the same harness, eight empty WebGL terminals dropped from
+  266 MB to 202 MB of WebContent, eight full 10k buffers from 615 MB to
+  532 MB, and 24 empty ones from 504 MB to 348 MB. The GPU process stayed
+  flat. Agent and shell scrollback stay at 10,000 lines. An editor PTY,
+  which draws on the alternate screen, keeps 1,000.
+
+### Tracked work
+- PRP: [`PRPs/026--terminal-memory-per-tab.md`](PRPs/026--terminal-memory-per-tab.md)
+- PR: [#121](https://github.com/willywg/klaudio-panels/pull/121)
+- Issue: [#113](https://github.com/willywg/klaudio-panels/issues/113) (point 4)
 
 ## [1.14.0] — 2026-09-24
 
